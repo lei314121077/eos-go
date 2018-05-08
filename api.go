@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
 	"sync"
 	"time"
 
@@ -20,7 +19,7 @@ import (
 
 type API struct {
 	HttpClient              *http.Client
-	BaseURL                 *url.URL
+	BaseURL                 string
 	ChainID                 []byte
 	Signer                  Signer
 	Debug                   bool
@@ -33,7 +32,7 @@ type API struct {
 	lastGetInfoLock  sync.Mutex
 }
 
-func New(baseURL *url.URL, chainID []byte) *API {
+func New(baseURL string, chainID []byte) *API {
 	if len(chainID) != 32 {
 		panic("chainID must be 32 bytes")
 	}
@@ -315,12 +314,8 @@ func (api *API) call(baseAPI string, endpoint string, body interface{}, out inte
 		return err
 	}
 
-	baseURL := &url.URL{
-		Scheme: api.BaseURL.Scheme,
-		Host:   api.BaseURL.Host,
-		Path:   fmt.Sprintf("/v1/%s/%s", baseAPI, endpoint),
-	}
-	req, err := http.NewRequest("POST", baseURL.String(), jsonBody)
+	targetURL := fmt.Sprintf("%s/v1/%s/%s", api.BaseURL, baseAPI, endpoint)
+	req, err := http.NewRequest("POST", targetURL, jsonBody)
 	if err != nil {
 		return fmt.Errorf("NewRequest: %s", err)
 	}
